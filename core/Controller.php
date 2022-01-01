@@ -64,5 +64,30 @@
       $this->response->etStatusCode(302, 'Found');
       $this->response->setHttpHeader('Location', $url);
     }
+
+    // csrf対策
+    protected function generateCsrfToken($from_name) {
+      $key = 'csrf_tokens/' . $from_name;
+      $tokens = $this->session->get($key, array());
+        // 10個トークンを保持できる。10を超えていたらarray_shiftで古いものから削除する。
+        if (count($tokens) >= 10) {
+          array_shift($tokens);
+        }
+      // session_idとmicrotimeで適当なハッシュ関数を作成。session_idは現在のセッションが存在しない時は空文字を返す
+      $token = sha1($from_name . session_id() . microtime());
+      $tokens[] = $token;
+
+      $this->session->get($key, array());
+
+      // trueで$tokenの厳密な型比較を行う $tokensと比較
+      // セッション上に格納されたトークンからpostされたトークンを探す
+      if (false !== ($pos = array_search($token, $tokens, true))) {
+        // 1度使ったので$tokens[$pos]を破棄
+        unset($tokens[$pos]);
+        $this->session->set($key, $tokens);
+        return true;
+      }
+      return false;
+    }
   }
 ?>
