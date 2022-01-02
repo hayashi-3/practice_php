@@ -7,6 +7,7 @@
     protected $response;
     protected $session;
     protected $db_manager;
+    protected $auth_actions = array();
 
     public function __constract($application){
       $this->controller_name = strtolower(substr(get_class($this), 0, -10));
@@ -26,9 +27,22 @@
         $this->forward404();
       }
 
-      $content = $this->action_method($params);
+      // ログインチェック needsAuthentication()メソッドの戻り値がtrueで未ログインの場合例外を投げる
+      if ($this->needsAuthentication($action) && !$this->session->isAuthenticated()) {
+        throw new UnauthorizedActionException();
+      }
+
+      $content = $this->$action_method($params);
 
       return $content;
+    }
+
+    protected function needsAuthentication($action) {
+      // is_arrayで配列かを確認、in_arrayで配列に値があるかをチェックする
+      if ($this->auth_actions === true || (is_array($this->auth_actions) && in_array($action, $this->auth_actions))) {
+        return true;
+      }
+      return false;
     }
 
     protected function render($valiables = array(), $template = null, $layout = 'layout') {
