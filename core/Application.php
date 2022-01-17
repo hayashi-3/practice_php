@@ -7,6 +7,7 @@
     protected $response;
     protected $session;
     protected $db_manager;
+    protected $login_action = array();
 
     public function __constract($debug = false) {
       $this->setDebugMode($debug);
@@ -91,8 +92,11 @@
 
       } catch (HttpNotFoundException $e) {
         $this->render404page($e);
-      }
 
+      } catch (UnauthorizedActionException $e) {
+        list($controller, $action) = $this->login_action;
+        $this->runAction($controller, $action);
+      }
       $this->response->send();
     }
 
@@ -148,5 +152,3 @@
     }
   
 }
-
-?>
